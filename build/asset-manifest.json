@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/kindred-generator/static/css/main.557854ce.css",
+    "main.js": "/kindred-generator/static/js/main.7c0c2602.js",
+    "index.html": "/kindred-generator/index.html",
+    "main.557854ce.css.map": "/kindred-generator/static/css/main.557854ce.css.map",
+    "main.7c0c2602.js.map": "/kindred-generator/static/js/main.7c0c2602.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.557854ce.css",
+    "static/js/main.7c0c2602.js"
+  ]
+}
