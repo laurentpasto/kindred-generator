@@ -13,6 +13,7 @@ const LogoGenerator = () => {
   const [mainShapePath, setMainShapePath] = useState('');
   const [topShapePaths, setTopShapePaths] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const extractPathFromSVG = (svgContent) => {
     const parser = new DOMParser();
@@ -25,21 +26,34 @@ const LogoGenerator = () => {
     const loadSVGs = async () => {
       try {
         // Load main shape
-        const mainShapeContent = await fetch('svg/main_shape.svg').then(response => response.text());
+        console.log('Attempting to load main shape...');
+        const mainResponse = await fetch('/svg/main_shape.svg');
+        if (!mainResponse.ok) {
+          throw new Error(`Failed to load main shape: ${mainResponse.status}`);
+        }
+        const mainShapeContent = await mainResponse.text();
         const mainPath = extractPathFromSVG(mainShapeContent);
+        console.log('Main shape loaded:', !!mainPath);
         setMainShapePath(mainPath);
 
         // Load all variant shapes
+        console.log('Loading variant shapes...');
         const paths = await Promise.all(
           Array.from({ length: 36 }, (_, i) => i + 1).map(async (num) => {
-            const content = await fetch(`svg/Vectorshape--${num}.svg`).then(response => response.text());
+            const response = await fetch(`/svg/Vectorshape--${num}.svg`);
+            if (!response.ok) {
+              throw new Error(`Failed to load shape ${num}: ${response.status}`);
+            }
+            const content = await response.text();
             return extractPathFromSVG(content);
           })
         );
+        console.log('Variant shapes loaded:', paths.length);
         setTopShapePaths(paths);
         setLoading(false);
       } catch (error) {
         console.error('Error loading SVG files:', error);
+        setError(error.message);
         setLoading(false);
       }
     };
@@ -96,6 +110,10 @@ const LogoGenerator = () => {
     return <div className="p-8">Loading SVG files...</div>;
   }
 
+  if (error) {
+    return <div className="p-8 text-red-500">Error: {error}</div>;
+  }
+
   return (
     <div className="flex flex-col items-center gap-8 p-8 max-w-4xl mx-auto">
       <div className="flex gap-8 w-full">
@@ -148,11 +166,15 @@ const LogoGenerator = () => {
         </div>
 
         {/* Logo Preview */}
-        <div className="flex-1 bg-gray-50 rounded-lg p-8 flex items-center justify-center">
-          <svg width="200" height="200" viewBox="0 0 100 100">
-            <path d={mainShapePath} fill={mainColor} />
-            <path d={topShapePaths[currentTopShape]} fill={topColor} />
-          </svg>
+        <div className="flex-1 bg-gray-50 rounded-lg p-8 flex items-center justify-center min-h-[400px]">
+          {mainShapePath && topShapePaths[currentTopShape] ? (
+            <svg width="200" height="200" viewBox="0 0 100 100">
+              <path d={mainShapePath} fill={mainColor} />
+              <path d={topShapePaths[currentTopShape]} fill={topColor} />
+            </svg>
+          ) : (
+            <div className="text-gray-400">No shapes loaded</div>
+          )}
         </div>
       </div>
 
@@ -160,7 +182,7 @@ const LogoGenerator = () => {
       <div className="flex gap-4 items-center">
         <button 
           onClick={handlePrevShape}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded hover:bg-gray-100 border"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
@@ -171,7 +193,7 @@ const LogoGenerator = () => {
         
         <button 
           onClick={handleNextShape}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded hover:bg-gray-100 border"
         >
           <ArrowRight className="w-6 h-6" />
         </button>
@@ -180,7 +202,7 @@ const LogoGenerator = () => {
       <div className="flex gap-4">
         <button
           onClick={handleRandom}
-          className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+          className="flex items-center gap-2 px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
         >
           <Shuffle className="w-4 h-4" />
           Random
@@ -188,7 +210,7 @@ const LogoGenerator = () => {
         
         <button
           onClick={handleGenerate}
-          className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+          className="flex items-center gap-2 px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
         >
           <Download className="w-4 h-4" />
           Download SVG
